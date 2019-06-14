@@ -5,6 +5,7 @@
     [goog.history.EventType :as HistoryEventType]
     [markdown.core :refer [md->html]]
     [cardio-kickboxing.ajax :as ajax]
+    [cardio-kickboxing.workout :as workout]
     [ajax.core :refer [GET POST]]
     [reitit.core :as reitit]
     [clojure.string :as string])
@@ -32,7 +33,8 @@
       {:class (when @expanded? :is-active)}
       [:div.navbar-start
        [nav-link "#/" "Home" :home]
-       [nav-link "#/about" "About" :about]]]]))
+       [nav-link "#/about" "About" :about]
+       [nav-link "#/workout" "Workout" :workout]]]]))
 
 (defn about-page []
   [:section.section>div.container>div.content
@@ -43,9 +45,14 @@
    (when-let [docs (:docs @session)]
      [:div {:dangerouslySetInnerHTML {:__html (md->html docs)}}])])
 
+(defn workout-page []
+  [:section.section>div.container>div.content
+   (workout/workout-app workout/sample-workout-1)])
+
 (def pages
   {:home #'home-page
-   :about #'about-page})
+   :about #'about-page
+   :workout #'workout-page})
 
 (defn page []
   [(pages (:page @session))])
@@ -56,13 +63,15 @@
 (def router
   (reitit/router
     [["/" :home]
-     ["/about" :about]]))
+     ["/about" :about]
+     ["/workout" :workout]]))
 
 (defn match-route [uri]
   (->> (or (not-empty (string/replace uri #"^.*#" "")) "/")
        (reitit/match-by-path router)
        :data
        :name))
+
 ;; -------------------------
 ;; History
 ;; must be called after routes have been defined
