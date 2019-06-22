@@ -9,12 +9,12 @@
 (defn home-page [request]
   (layout/render request "home.html"))
 
-(defn get-exercises [request]
-  nil)
+(defn gen-workout [request]
+  (response/ok (db/get-exercises)))
 
 (defn home-routes []
   [""
    {:middleware [middleware/wrap-csrf
                  middleware/wrap-formats]}
    ["/" {:get home-page}]
-   ["/exercises" {:get get-exercises}]])
+   ["/gen-workout" {:get gen-workout}]])

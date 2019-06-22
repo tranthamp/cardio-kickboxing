@@ -32,27 +32,14 @@
      [:div#nav-menu.navbar-menu
       {:class (when @expanded? :is-active)}
       [:div.navbar-start
-       [nav-link "#/" "Home" :home]
-       [nav-link "#/about" "About" :about]
-       [nav-link "#/workout" "Workout" :workout]]]]))
-
-(defn about-page []
-  [:section.section>div.container>div.content
-   [:img {:src "/img/warning_clojure.png"}]])
-
-(defn home-page []
-  [:section.section>div.container>div.content
-   (when-let [docs (:docs @session)]
-     [:div {:dangerouslySetInnerHTML {:__html (md->html docs)}}])])
+       [nav-link "#/" "Workout" :workout]]]]))
 
 (defn workout-page []
   [:section.section>div.container>div.content
-   (workout/workout-app workout/sample-workout-1)])
+   (workout/workout-app)])
 
 (def pages
-  {:home #'home-page
-   :about #'about-page
-   :workout #'workout-page})
+  {:workout #'workout-page})
 
 (defn page []
   [(pages (:page @session))])
@@ -62,9 +49,7 @@
 
 (def router
   (reitit/router
-    [["/" :home]
-     ["/about" :about]
-     ["/workout" :workout]]))
+    [["/" :workout]]))
 
 (defn match-route [uri]
   (->> (or (not-empty (string/replace uri #"^.*#" "")) "/")
@@ -85,15 +70,11 @@
 
 ;; -------------------------
 ;; Initialize app
-(defn fetch-docs! []
-  (GET "/docs" {:handler #(swap! session assoc :docs %)}))
-
 (defn mount-components []
   (r/render [#'navbar] (.getElementById js/document "navbar"))
   (r/render [#'page] (.getElementById js/document "app")))
 
 (defn init! []
   (ajax/load-interceptors!)
-  (fetch-docs!)
   (hook-browser-navigation!)
   (mount-components))

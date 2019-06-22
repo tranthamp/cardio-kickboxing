@@ -1,5 +1,6 @@
 (ns cardio-kickboxing.workout
-    (:require [reagent.core :as r]))
+    (:require [reagent.core :as r]
+              [ajax.core :refer [GET]]))
 
 ; TODO: Allow workout and exercises to be edited by the user and generate workout
 (def sample-exercises [{:name "Punching - Left" :targets [:upper] :difficulty 1 :callout "Punching, moving to the left"}
@@ -81,26 +82,33 @@
       "Time since start: " @seconds-since-start " seconds"]))
 
 (defn title-component [workout]
-  [:div (workout :title)])
+  [:div (:title @workout)])
 
 (defn round-component [workout]
-  (let [round (current-round workout)]
+  (let [round (current-round @workout)]
     [:div
       "Round: " round]))
 
-(defn current-exercise [{:keys [exercises] :as workout}]
-  (let [round (current-round workout)]
-    (get-exercise-by-name sample-exercises (nth exercises (- round 1)))))
+(defn current-exercise [workout]
+  (let [round (current-round @workout)
+        exercises (:exercises @workout)]
+    (nth exercises (- round 1))))
 
 (defn exercise-component [workout]
-  [:div
-    (:name (current-exercise workout))])
+  (let [round (current-round @workout)
+        exercises (:exercises @workout)
+        exercise (nth exercises (- round 1))
+        exercise-name (:name exercise)]
+    (if (nil? exercise)
+      [:div "WTF"]
+      [:div (str exercise-name)])))
 
 (defn callout-exercise [workout delay-remaining]
   (when (= delay-remaining 5) (speak (:callout (current-exercise workout)))))
 
-(defn callout-dispatcher [{:keys [active-seconds]} time-remaining]
-  (let [midround (/ active-seconds 2)]
+(defn callout-dispatcher [workout time-remaining]
+  (let [active-seconds (:active-seconds @workout)
+        midround (/ active-seconds 2)]
     (cond
       (= time-remaining active-seconds) :start
       (= time-remaining midround) :middle
@@ -115,8 +123,9 @@
 (defmethod callout-times :end [] (speak "time"))
 (defmethod callout-times :none [])
 
-(defn countdown-component [{:keys [active-seconds] :as workout}]
-  (let [round-remaining (seconds-remaining-in-round workout)
+(defn countdown-component [workout]
+  (let [active-seconds (:active-seconds @workout)
+        round-remaining (seconds-remaining-in-round @workout)
         delay-remaining (- round-remaining active-seconds)]
     (if (> delay-remaining 0)
       [:div
@@ -130,18 +139,34 @@
   [:div
     [:input {:type "button" :value "Start" :on-click toggle-timer}]])
 
-(defn exercise-lister [exercises]
-  [:ol {:style {:text-align "left"}}
-    (for [exercise exercises]
-      ^{:key exercise} [:li exercise])])
+(defn exercise-list-component [workout]
+  (let [exercises (:exercises @workout)]
+    [:div
+      "Exercises:"
+      [:ol {:style {:text-align "left"}}
+        (for [exercise exercises]
+          ^{:key exercise} [:li (:name exercise)])]]))
 
-(defn exercise-list-component [{:keys [exercises]}]
-  [:div
-    "Exercises:"
-      [exercise-lister exercises]])
+(def sample-workout
+  {:title "Sample Workout #1"
+   :rest-seconds 10
+   :active-seconds 20
+   :exercises nil})
 
-(defn workout-app [workout]
+(defn gen-workout [workout]
+  (GET "/gen-workout"
+       {:headers {"Accept" "application/transit+json"}
+        :handler #(swap! workout assoc :exercises %)
+        :error-handler #(.log js/console "Failed to fetch exercises from server")}))
+
+(defn debug-component [workout]
+  [:div>p (str @workout)])
+
+(defn display-workout [workout]
   [:div
+    ;[debug-component workout]
+    ;[:br]
+    ;[:br]
     ;[timer-component]
     [title-component workout]
     [:br]
@@ -152,4 +177,15 @@
     [start-button-component]
     [:br]
     [:br]
-    [exercise-list-component workout]])
+    [exercise-list-component workout]
+   ])
+
+(defn workout-app []
+  (let [workout (r/atom sample-workout)]
+    (gen-workout workout)
+    (display-workout workout)))
+
+
+
+
+
