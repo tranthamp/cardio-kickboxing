@@ -2,41 +2,6 @@
     (:require [reagent.core :as r]
               [ajax.core :refer [GET]]))
 
-; TODO: Allow workout and exercises to be edited by the user and generate workout
-(def sample-exercises [{:name "Punching - Left" :targets [:upper] :difficulty 1 :callout "Punching, moving to the left"}
-                       {:name "Punching - Right" :targets [:upper] :difficulty 1 :callout "Punching, moving to the right"}
-                       {:name "Back Kicks" :targets [:lower] :difficulty 1 :callout "Because they work and I like them, back kicks"}
-                       {:name "Fast Kicks" :targets [:lower] :difficulty 1 :callout "Fast kicks"}
-                       {:name "Sliding Side Kicks" :targets [:lower] :difficulty 1 :callout "Sliding side kicks"}
-                       {:name "Free Station - Left" :targets [:upper :lower] :difficulty 2 :callout "Left leg in front, free station" :switch true}
-                       {:name "Free Station - Right" :targets [:upper :lower] :difficulty 2 :callout "Right leg in front, free station" :switch true}
-                       {:name "Horse Stance Punching" :targets [:lower] :difficulty 1 :callout "Horse Stance Punching"}
-                       {:name "Little Sister" :targets [:lower] :difficulty 3 :callout "Little sister"}
-                       {:name "Front Leg Roundhouse Kicks" :targets [:lower] :difficulty 3 :callout "Front leg roundhouse kicks"}
-                       {:name "In Her Honor" :targets [:upper :lower] :difficulty 3 :callout "In her honor"}])
-
-(def sample-exercise-set-1 ["Punching - Left"
-                          "Back Kicks"
-                          "Free Station - Left"
-                          "Punching - Right"
-                          "Fast Kicks"
-                          "Free Station - Right"
-                          "Punching - Left"
-                          "Sliding Side Kicks"
-                          "Free Station - Left"
-                          "Punching - Right"
-                          "Little Sister"
-                          "Free Station - Right"
-                          "Back Kicks"
-                          "In Her Honor"
-                          "Horse Stance Punching"])
-
-(def sample-workout-1
-  {:title "Sample Workout #1"
-   :rest-seconds 30
-   :active-seconds 120
-   :exercises sample-exercise-set-1})
-
 (def seconds-since-start (r/atom 1))
 (def timer (r/atom nil))
 
@@ -147,17 +112,11 @@
         (for [exercise exercises]
           ^{:key exercise} [:li (:name exercise)])]]))
 
-(def sample-workout
-  {:title "Sample Workout #1"
-   :rest-seconds 10
-   :active-seconds 20
-   :exercises nil})
-
 (defn gen-workout [workout]
   (GET "/gen-workout"
        {:headers {"Accept" "application/transit+json"}
-        :handler #(swap! workout assoc :exercises %)
-        :error-handler #(.log js/console "Failed to fetch exercises from server")}))
+        :handler #(reset! workout %)
+        :error-handler #(.log js/console "Failed to fetch workout from server")}))
 
 (defn debug-component [workout]
   [:div>p (str @workout)])
@@ -181,11 +140,6 @@
    ])
 
 (defn workout-app []
-  (let [workout (r/atom sample-workout)]
+  (let [workout (r/atom {})]
     (gen-workout workout)
     (display-workout workout)))
-
-
-
-
-
