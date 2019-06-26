@@ -8,7 +8,10 @@
    :active-seconds 20
    :exercises nil})
 
+(defn select-exercises []
+  (let [exercise-list (db/get-exercises)]
+    (take 15 (repeatedly #(rand-nth exercise-list)))))
+
 (defn gen-workout []
-  (let [workout sample-workout
-        exercise-list (db/get-exercises)]
-    (assoc workout :exercises exercise-list)))
+  (let [workout sample-workout]
+    (assoc workout :exercises (select-exercises))))
