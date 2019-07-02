@@ -1,8 +1,8 @@
 -- :name create-exercise! :! :n
 -- :doc creates a new exercise
 INSERT INTO exercises
-(name, callout, switch)
-VALUES (:name, :callout, :switch)
+(name, callout, switch, difficulty)
+VALUES (:name, :callout, :switch, :difficulty)
 
 -- :name get-exercise :? :1
 -- :doc retrieves a exercise record given the id

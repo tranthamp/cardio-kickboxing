@@ -21,12 +21,11 @@
     (jdbc/db-set-rollback-only! t-conn)
     (is (= 1 (db/create-exercise!
                t-conn
-               {:id         "1"
-                :name       "Test"
+               {:name       "Test"
                 :callout    "Test Callout"
                 :switch     false})))
-    (is (= {:id         "1"
+    (is (= {:id         1
             :name       "Test"
             :callout    "Test Callout"
             :switch     false}
-           (db/get-exercise t-conn {:id "1"})))))
+           (first (db/get-exercises t-conn))))))
