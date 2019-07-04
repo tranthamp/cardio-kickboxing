@@ -1,5 +1,6 @@
 (ns cardio-kickboxing.workout
-    (:require [reagent.core :as r]
+    (:require [cardio-kickboxing.speaker :as speaker]
+              [reagent.core :as r]
               [ajax.core :refer [GET]]))
 
 (def seconds-since-start (r/atom 1))
@@ -18,18 +19,6 @@
 (defn seconds-remaining-in-round [{:keys [rest-seconds active-seconds]}]
   (let [round-length (+ rest-seconds active-seconds)]
     (- round-length (mod @seconds-since-start round-length))))
-
-(defn speak
-  ([message] (speak message nil))
-  ([message callback]
-    (let [utterance (new js/SpeechSynthesisUtterance)
-          voices (js/window.speechSynthesis.getVoices())]
-      ;FIXME: Figure out how to change the voice
-      ;(set! (.-voice utterance) (nth voices 48))
-      (set! (.-lang utterance) "en-US")
-      (set! (.-text utterance) message)
-      (.addEventListener utterance "end" callback)
-      (js/speechSynthesis.speak utterance))))
 
 (defn start-timer []
   (reset! timer (js/setInterval #(swap! seconds-since-start inc) 1000)))
@@ -69,7 +58,7 @@
       [:div (str exercise-name)])))
 
 (defn callout-exercise [workout delay-remaining]
-  (when (= delay-remaining 5) (speak (:callout (current-exercise workout)))))
+  (when (= delay-remaining 5) (speaker/say (:callout (current-exercise workout)))))
 
 (defn callout-dispatcher [workout time-remaining]
   (let [active-seconds (:active-seconds @workout)
@@ -82,10 +71,10 @@
       :else :none)))
 
 (defmulti callout-times callout-dispatcher)
-(defmethod callout-times :start [] (speak "start"))
-(defmethod callout-times :middle [workout] (when (:switch (current-exercise workout)) (speak "switch")))
-(defmethod callout-times :fifteen [] (speak "fifteen"))
-(defmethod callout-times :end [] (speak "time"))
+(defmethod callout-times :start [] (speaker/say "start"))
+(defmethod callout-times :middle [workout] (when (:switch (current-exercise workout)) (speaker/say "switch")))
+(defmethod callout-times :fifteen [] (speaker/say "fifteen"))
+(defmethod callout-times :end [] (speaker/say "time"))
 (defmethod callout-times :none [])
 
 (defn countdown-component [workout]
