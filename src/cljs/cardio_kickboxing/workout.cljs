@@ -3,7 +3,7 @@
               [reagent.core :as r]
               [ajax.core :refer [GET]]))
 
-(def seconds-since-start (r/atom 1))
+(def seconds-since-start (r/atom 0))
 (def timer (r/atom nil))
 
 (defn find-first [f coll]
@@ -12,13 +12,21 @@
 (defn get-exercise-by-name [exercises name]
   (find-first #(= name (:name %)) exercises))
 
-(defn current-round [{:keys [rest-seconds active-seconds]}]
-  (let [round-length (+ rest-seconds active-seconds)]
-    (int (Math/ceil (/ @seconds-since-start round-length)))))
+(defn current-round
+  "Returns the current round, calculated using: (floor (time / round-length))"
+  [workout]
+  (when-let [active-seconds (:active-seconds workout)]
+    (when-let [rest-seconds (:rest-seconds workout)]
+      (let [round-length (+ rest-seconds active-seconds)]
+        (int (Math/floor (/ @seconds-since-start round-length)))))))
 
-(defn seconds-remaining-in-round [{:keys [rest-seconds active-seconds]}]
-  (let [round-length (+ rest-seconds active-seconds)]
-    (- round-length (mod @seconds-since-start round-length))))
+(defn seconds-remaining-in-round
+  "Returns the seconds remaining in the current round"
+  [workout]
+  (when-let [active-seconds (:active-seconds workout)]
+    (when-let [rest-seconds (:rest-seconds workout)]
+      (let [round-length (+ rest-seconds active-seconds)]
+        (- round-length (mod @seconds-since-start round-length))))))
 
 (defn start-timer []
   (reset! timer (js/setInterval #(swap! seconds-since-start inc) 1000)))
@@ -39,22 +47,20 @@
   [:div (:title @workout)])
 
 (defn round-component [workout]
-  (let [round (current-round @workout)]
+  (when-let [round (current-round @workout)]
     [:div
-      "Round: " round]))
+      "Round: " (+ round 1)]))
 
 (defn current-exercise [workout]
-  (let [round (current-round @workout)
-        exercises (:exercises @workout)]
-    (nth exercises (- round 1))))
+  (when-let [round (current-round @workout)]
+    (let [exercises (:exercises @workout)]
+      (nth exercises round))))
 
 (defn exercise-component [workout]
-  (let [round (current-round @workout)
-        exercises (:exercises @workout)
-        exercise (nth exercises (- round 1))
-        exercise-name (:name exercise)]
-    (if (nil? exercise)
-      [:div "WTF"]
+  (when-let [round (current-round @workout)]
+    (let [exercises (:exercises @workout)
+          exercise (nth exercises round)
+          exercise-name (:name exercise)]
       [:div (str exercise-name)])))
 
 (defn callout-exercise [workout delay-remaining]
@@ -81,7 +87,7 @@
   (let [active-seconds (:active-seconds @workout)
         round-remaining (seconds-remaining-in-round @workout)
         delay-remaining (- round-remaining active-seconds)]
-    (if (> delay-remaining 0)
+    (if (> round-remaining active-seconds)
       [:div
         (callout-exercise workout delay-remaining)
         "Round starting in " delay-remaining " seconds"]
@@ -108,19 +114,18 @@
         :error-handler #(.log js/console "Failed to fetch workout from server")}))
 
 (defn debug-component [workout]
-  [:div>p (str @workout)])
+  [:div>p (str @workout)
+   [:br]
+   [:br]])
 
 (defn display-workout [workout]
   [:div
     ;[debug-component workout]
-    ;[:br]
-    ;[:br]
     ;[timer-component]
     [title-component workout]
     [:br]
     [round-component workout]
-    [exercise-component workout]
-    [:br]
+    [exercise-component workout] [:br]
     [countdown-component workout]
     [start-button-component]
     [:br]

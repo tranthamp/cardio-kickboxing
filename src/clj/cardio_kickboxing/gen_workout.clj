@@ -31,17 +31,18 @@
   [exercises diff-seq]
   (loop [workout []
          remaining diff-seq
-         lazy-seqs (build-lazy-seqs exercises)]
+         lazy-seqs (build-lazy-seqs exercises)
+         index 0]
     (if (empty? remaining)
       workout
-      (do
-        (let [diff (first remaining)
-              exer (first (get lazy-seqs diff))
-              next-seqs (update lazy-seqs diff rest)]
-          (recur
-            (conj workout exer)
-            (rest remaining)
-            next-seqs))))))
+      (let [diff (first remaining)
+            exer (assoc (first (get lazy-seqs diff)) :index index)
+            next-seqs (update lazy-seqs diff rest)]
+        (recur
+          (conj workout exer)
+          (rest remaining)
+          next-seqs
+          (inc index))))))
 
 (defn gen-workout []
   (let [workout sample-workout
